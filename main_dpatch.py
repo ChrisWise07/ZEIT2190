@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import os
-import torch
 import sys
 
 from art.estimators.object_detection import PyTorchFasterRCNN
@@ -16,6 +15,10 @@ def main(root_dir):
     frcnn = PyTorchFasterRCNN(
         clip_values=(0, 255), attack_losses=["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"]
     )
+
+    # Create attack
+    attack = RobustDPatch(estimator=frcnn, max_iter=4, sample_size=1, learning_rate=5.0, batch_size=1, 
+                          verbose=False, rotation_weights=(1,1,1,1), brightness_range= (0.1,1.0))
 
     with os.scandir(root_dir + "images") as entries:
         i = 0
@@ -42,18 +45,15 @@ def main(root_dir):
             top_left_bbox = predictions_boxes[0]
             bottom_right_bbox = predictions_boxes[1]
             centre_point = (int((top_left_bbox[0] + bottom_right_bbox[0]) / 2),
-                            int((top_left_bbox[1] +  bottom_right_bbox[1]) / 2))
-            #Here the coordinates are store (y,x) as somewhere in Roboust Dpatch they are treated as (y,x) 
+                            int((top_left_bbox[1] +  bottom_right_bbox[1]) / 2)) 
             patch_dimensions = (40,40)
-            top_left_coordinates = (int(centre_point[1] - (patch_dimensions[1]/2)),
-                                  int(centre_point[0] - (patch_dimensions[0]/2)))
-
+            #Here the coordinates are store (y,x) as somewhere in Roboust Dpatch they are treated as (y,x) 
+            top_left_coordinates = ((int(centre_point[1] - (patch_dimensions[1]/2)),
+                                  int(centre_point[0] - (patch_dimensions[0]/2))))
+            # Customise patch location
+            attack.set_patch_location(top_left_coordinates)
 
             print("\n\n--- Training adversarial patch for image {} ---".format(i))
-            # Create attack
-            attack = RobustDPatch(estimator=frcnn, max_iter=4, patch_location=top_left_coordinates, 
-                                  sample_size=1, learning_rate=5.0, batch_size=1, verbose=False, 
-                                  rotation_weights=(1,1,1,1), brightness_range= (0.1,1.0))
 
             #training loop: actually number of iterations = j*max_iter
             for j in range(4):

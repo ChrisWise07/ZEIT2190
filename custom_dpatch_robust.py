@@ -524,3 +524,6 @@ class RobustDPatch(EvasionAttack):
 
         if not isinstance(self.targeted, bool):
             raise ValueError("The argument `targeted` has to be of type bool.")
+            
+    def set_patch_location(self, patch_location: Tuple[int, int]):
+        self.patch_location = patch_location

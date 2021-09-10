@@ -9,7 +9,7 @@ from typing import Tuple
 ROOT_DIRECTORY = "/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/"
 DATA_DIRECTORY = ROOT_DIRECTORY + "data/"
 sys.path.append(ROOT_DIRECTORY)
-from rrap_utils import get_rgb_diff, plot_predictions
+from rrap_utils import get_rgb_diff, plot_predictions, get_image_as_tensor
 
 class Image_For_Patch:
     _path = str
@@ -19,13 +19,15 @@ class Image_For_Patch:
     _image_rbg_diff = Tensor
     _predictions_boxes = []
     _centre_point_of_prediction_boxes = []
+    _image_tensor = Tensor
 
     def __init__(self, path, image_num, object_detector) -> None:
         self._path = path
         self._image_num = image_num
         self._image_as_np_array = self._open_image_as_np_array()
         self._image_size = (self._image_as_np_array.shape[2:0:-1])
-        self._image_rbg_diff = get_rgb_diff(image_path = self._path, image_size = self._image_size)
+        self._image_tensor = get_image_as_tensor(path, self._image_size)
+        self._image_rbg_diff = get_rgb_diff(self._image_tensor)
         self._predictions_boxes = self._generate_predictions_for_image(object_detector)
         self._centre_point_of_prediction_boxes = self._calculate_centre_point_of_prediction_boxes()
     

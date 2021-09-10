@@ -44,8 +44,8 @@ def generate_adversarial_patch(attack, image):
 def main():
 
     # Create attack
-    attack = RobustDPatch(estimator=FRCNN, max_iter=5, batch_size=1, verbose=False, 
-                          rotation_weights=(1,1,1,1), brightness_range= (0.1,1.0))
+    attack = RobustDPatch(estimator=FRCNN, max_iter=5, batch_size=1, verbose=False,
+                          rotation_weights=(1,1,1,1), brightness_range= (0.1,1.0), learning_rate=0.1)
 
     with os.scandir(IMAGES_DIRECTORY) as entries:
         i = 0

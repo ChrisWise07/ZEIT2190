@@ -260,7 +260,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         x: np.ndarray, 
         y: Union[List[Dict[str, np.ndarray]], 
         List[Dict[str, "torch.Tensor"]]], 
-        perceptibility_loss: Tensor,
+        iter_num: int,
         **kwargs
     ) -> np.ndarray:
         """
@@ -299,13 +299,9 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                 else:
                     loss = loss + output[loss_name]
 
-            print("\n--- Losses ---")
-            print(f"Detection loss: {loss:>7f}")
-            print(f"Perceptibility Loss: {perceptibility_loss:>7f}")
-
-            loss -= perceptibility_loss
-
-            print(f"Total Loss: {loss:>7f}")
+            if (iter_num % 5 == 0):
+                print(f"\n--- Iteration Number {iter_num} losses ---")
+                print(f"Detection loss: {loss:>7f}")
 
             # Clean gradients
             self._model.zero_grad()

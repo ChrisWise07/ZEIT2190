@@ -177,14 +177,32 @@ def plot_predictions(object_detector, image, path):
 
     return predictions_boxes[0]
 
-def get_rgb_diff(image_path, image_size):
+def get_image_as_tensor(image_path, image_size):
         image_tensor = TRANSFORM(Image.open(image_path).resize(image_size))
+        return torch.tensor(image_tensor, requires_grad=True)
+
+def get_rgb_diff(image_tensor):
         image_tensor = torch.stack([image_tensor], dim=0)
         return rgb2lab_diff(image_tensor,DEVICE) 
 
-def get_perceptibility_loss_between_image_and_patched_image(og_image, patched_image):
-        save_image(patched_image, PATCHED_IMAGE_PATH)
-        patched_image_rgb_diff = get_rgb_diff(PATCHED_IMAGE_PATH, image_size=og_image.get_image_size())
+def calculate_perceptibility_gradients_between_images(og_image, iter_num):
+        patched_image_tensor = get_image_as_tensor(PATCHED_IMAGE_PATH, image_size=og_image.get_image_size())
+        patched_image_rgb_diff = get_rgb_diff(patched_image_tensor)
         d_map=ciede2000_diff(og_image.get_image_rbg_diff(), patched_image_rgb_diff, DEVICE).unsqueeze(1)
-        colour_dis=torch.norm(d_map.view(1,-1),dim=1)
-        return colour_dis.sum()
+        perceptibility_dis=torch.norm(d_map.view(1,-1),dim=1)
+        perceptibility_loss = perceptibility_dis.sum()
+        if (iter_num % 5 == 0):
+                print(f"Perceptibility loss: {perceptibility_loss:>7f}")
+        perceptibility_loss.backward(retain_graph=True)
+        perceptibility_grad = patched_image_tensor.grad.cpu().numpy().copy()
+        patched_image_tensor.grad.zero_()
+        return perceptibility_grad
+
+def get_perceptibility_gradients_of_patch(og_image, patched_image, patch_shape, patch_location, iter_num):
+        save_image(patched_image, PATCHED_IMAGE_PATH)
+        patch_perceptibility_gradients = calculate_perceptibility_gradients_between_images(og_image, iter_num)
+        patch_perceptibility_gradients = np.reshape(patch_perceptibility_gradients, patched_image.shape)
+        return patch_perceptibility_gradients[patch_location[0]:patch_location[0]+patch_shape[0],
+                                              patch_location[1]:patch_location[1]+patch_shape[1],
+                                              :]
+       

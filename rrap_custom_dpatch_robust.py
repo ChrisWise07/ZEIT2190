@@ -89,6 +89,7 @@ class RobustDPatch(EvasionAttack):
         batch_size: int = 16,
         targeted: bool = False,
         verbose: bool = True,
+        perceptibility_learning_rate: float = 0.01
     ):
         """
         Create an instance of the :class:`.RobustDPatch`.
@@ -111,6 +112,7 @@ class RobustDPatch(EvasionAttack):
 
         self.patch_shape = patch_shape
         self.learning_rate = learning_rate
+        self.perceptibility_learning_rate = perceptibility_learning_rate
         self.max_iter = max_iter
         self.batch_size = batch_size
         if self.estimator.clip_values is None:
@@ -222,6 +224,8 @@ class RobustDPatch(EvasionAttack):
         for i_step in trange(self.max_iter, desc="RobustDPatch iteration", disable=not self.verbose): 
             if i_step == 0 or (i_step + 1) % 100 == 0:
                 logger.info("Training Step: %i", i_step + 1)
+            
+            loss_tracker.set_iter_number(i_step)
 
             num_batches = math.ceil(x.shape[0] / self.batch_size)
             patch_gradients_old = np.zeros_like(self._patch)
@@ -266,11 +270,16 @@ class RobustDPatch(EvasionAttack):
 
                     patch_gradients_old = patch_gradients
 
+            #update based on detection
             self._patch = self._patch + np.sign(patch_gradients) * (1 - 2 * int(self.targeted)) * self.learning_rate
+            self._patch = (255*(self._patch - self._patch.min())/self._patch.ptp()).astype(int)
 
+            #update based on perceptibility
             patched_image = self.apply_patch(og_image.get_image_as_np_array())
             patch_perceptibility_gradients = get_perceptibility_gradients_of_patch(og_image, patched_image[0], self.patch_shape, self.patch_location, loss_tracker)
-            self._patch = self._patch + patch_perceptibility_gradients * 0.01
+            self._patch = self._patch + patch_perceptibility_gradients * self.perceptibility_learning_rate
+            self._patch = (255*(self._patch - self._patch.min())/self._patch.ptp()).astype(int)
+
 
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(
@@ -278,8 +287,6 @@ class RobustDPatch(EvasionAttack):
                     a_min=self.estimator.clip_values[0],
                     a_max=self.estimator.clip_values[1],
                 )
-            
-            loss_tracker.increase_iter_number()
 
         return self._patch
 

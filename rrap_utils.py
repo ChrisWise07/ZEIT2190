@@ -130,11 +130,11 @@ class Loss_Tracker:
                 else:
                         self._running_average_perceptibility_loss=current_loss
 
-                if ((self._iter_number == 0) or ((self._iter_number + 1) % self._nth_number == 0)):
+                if ((self._iter_number == 0) or (self._iter_number % self._nth_number == 0)):
                         self.print_running_average_perceptibility_loss(current_loss)
 
         def print_running_average_perceptibility_loss(self, current_loss):
-                        print(f"\n--- Iteration Number {self.get_iter_number()} losses ---")
+                        print(f"\n--- Iteration Number {self._iter_number} losses ---")
                         print(f"Perceptibility loss: {current_loss:>7f}")
                         print(f"Running average perceptibility loss: {self._running_average_perceptibility_loss:7f}")
 
@@ -144,19 +144,16 @@ class Loss_Tracker:
                 else:
                         self._running_average_detection_loss=current_loss
                 
-                if ((self._iter_number == 0) or ((self._iter_number + 1) % self._nth_number == 0)):
+                if ((self._iter_number == 0) or (self._iter_number % self._nth_number == 0)):
                         self.print_running_average_detection_loss(current_loss)
         
         def print_running_average_detection_loss(self, current_loss):
-                        print(f"\n--- Iteration Number {self.get_iter_number()} losses ---")
+                        print(f"\n--- Iteration Number {self._iter_number} losses ---")
                         print(f"Perceptibility loss: {current_loss:>7f}")
                         print(f"Running average perceptibility loss: {self._running_average_detection_loss:7f}")
 
         def get_iter_number(self):
-                if self._iter_number:
-                        return self._iter_number + 1
-                else:
-                        return 0
+                return self._iter_number
 
         def get_running_average_perceptibility_loss(self):
                 return self._running_average_perceptibility_loss
@@ -164,8 +161,8 @@ class Loss_Tracker:
         def get_running_average_detection_loss(self):
                 return self._running_average_detection_loss
 
-        def increase_iter_number(self):
-                self._iter_number += 1 
+        def set_iter_number(self, num):
+                self._iter_number = num 
 
 def extract_predictions(predictions_):
         # Get the predicted class

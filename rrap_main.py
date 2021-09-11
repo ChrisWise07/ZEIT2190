@@ -28,26 +28,21 @@ def get_custom_patch_location(prediction_centre_points, patch_shape):
 
 def generate_adversarial_patch(attack, image, loss_tracker):
     print("\n\n--- Generating adversarial patch for image {} ---".format(image.get_image_num()))
-    image_copies = np.vstack([image.get_image_as_np_array()]*1)
+    image_copies = np.vstack([image.get_image_as_np_array()]*4)
 
-    #training loop: actually number of iterations = j*max_iter
-    for j in range(2):
-        #train adv patch to trick object detector and not to be perceptible
-        patch_adv = attack.generate(x=image_copies, og_image=image, loss_tracker=loss_tracker, y=None)
-                                    
-        print("\n--- Periodic prediction {}---".format(j))                         
-        image_adv = attack.apply_patch(x=image.get_image_as_np_array())
-        generate_predictions(object_detector=FRCNN, image=image_adv)  
+    #train adv patch to trick object detector and not to be perceptible
+    patch_adv = attack.generate(x=image_copies, og_image=image, loss_tracker=loss_tracker, y=None)                        
+    image_adv = attack.apply_patch(x=image.get_image_as_np_array()) 
 
     return patch_adv, image_adv
 
 def main():
 
     # Create attack
-    attack = RobustDPatch(estimator=FRCNN, max_iter=5, batch_size=1, verbose=False, rotation_weights=(1,1,1,1), 
-                          brightness_range= (0.1,1.0), learning_rate=5.0, perceptibility_learning_rate=0.01)
+    attack = RobustDPatch(estimator=FRCNN, max_iter=100, batch_size=2, verbose=False, rotation_weights=(1,1,1,1), 
+                          brightness_range= (0.1,1.0), learning_rate=5.0, perceptibility_learning_rate=0.1)
     
-    loss_tracker = Loss_Tracker(nth_num=2)
+    loss_tracker = Loss_Tracker(nth_num=10)
 
     with os.scandir(IMAGES_DIRECTORY) as entries:
         i = 0

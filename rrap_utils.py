@@ -120,6 +120,7 @@ class Loss_Tracker:
         _running_average_perceptibility_loss = None
         _running_average_detection_loss= None
         _nth_number = int
+        _flag = False
 
         def __init__(self, nth_num):
                 self._nth_number = nth_num
@@ -144,13 +145,13 @@ class Loss_Tracker:
                 else:
                         self._running_average_detection_loss=current_loss
                 
-                if ((self._iter_number == 0) or (self._iter_number % self._nth_number == 0)):
+                if ( ((self._iter_number == 0) or (self._iter_number % self._nth_number == 0)) and self._flag):
                         self.print_running_average_detection_loss(current_loss)
         
         def print_running_average_detection_loss(self, current_loss):
                         print(f"\n--- Iteration Number {self._iter_number} losses ---")
-                        print(f"Perceptibility loss: {current_loss:>7f}")
-                        print(f"Running average perceptibility loss: {self._running_average_detection_loss:7f}")
+                        print(f"Detection loss: {current_loss:>7f}")
+                        print(f"Running average detection loss: {self._running_average_detection_loss:7f}")
 
         def get_iter_number(self):
                 return self._iter_number
@@ -163,6 +164,9 @@ class Loss_Tracker:
 
         def set_iter_number(self, num):
                 self._iter_number = num 
+        
+        def set_flag(self, flag):
+                self._flag = flag
 
 def extract_predictions(predictions_):
         # Get the predicted class

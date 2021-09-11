@@ -27,6 +27,12 @@ from torch.functional import Tensor
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.pytorch import PyTorchEstimator
 
+import sys
+ROOT_DIRECTORY = "/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/"
+sys.path.append(ROOT_DIRECTORY)
+from rrap_utils import Loss_Tracker
+
+
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
@@ -260,7 +266,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         x: np.ndarray, 
         y: Union[List[Dict[str, np.ndarray]], 
         List[Dict[str, "torch.Tensor"]]], 
-        iter_num: int,
+        loss_tracker: Loss_Tracker,
         **kwargs
     ) -> np.ndarray:
         """
@@ -299,9 +305,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                 else:
                     loss = loss + output[loss_name]
 
-            if (iter_num % 5 == 0):
-                print(f"\n--- Iteration Number {iter_num} losses ---")
-                print(f"Detection loss: {loss:>7f}")
+            loss_tracker.update_running_average_detection_loss(loss.item())
 
             # Clean gradients
             self._model.zero_grad()

@@ -115,6 +115,58 @@ COCO_INSTANCE_CATEGORY_NAMES = [
     "toothbrush",
 ]
 
+class Loss_Tracker:
+        _iter_number = 0 
+        _running_average_perceptibility_loss = None
+        _running_average_detection_loss= None
+        _nth_number = int
+
+        def __init__(self, nth_num):
+                self._nth_number = nth_num
+
+        def update_running_average_perceptibility_loss(self, current_loss):
+                if (self._running_average_perceptibility_loss):
+                        self._running_average_perceptibility_loss=(self._running_average_perceptibility_loss+current_loss)/2.0
+                else:
+                        self._running_average_perceptibility_loss=current_loss
+
+                if ((self._iter_number == 0) or ((self._iter_number + 1) % self._nth_number == 0)):
+                        self.print_running_average_perceptibility_loss(current_loss)
+
+        def print_running_average_perceptibility_loss(self, current_loss):
+                        print(f"\n--- Iteration Number {self.get_iter_number()} losses ---")
+                        print(f"Perceptibility loss: {current_loss:>7f}")
+                        print(f"Running average perceptibility loss: {self._running_average_perceptibility_loss:7f}")
+
+        def update_running_average_detection_loss(self, current_loss):
+                if (self._running_average_detection_loss):
+                        self._running_average_detection_loss=(self._running_average_detection_loss+current_loss)/2.0
+                else:
+                        self._running_average_detection_loss=current_loss
+                
+                if ((self._iter_number == 0) or ((self._iter_number + 1) % self._nth_number == 0)):
+                        self.print_running_average_detection_loss(current_loss)
+        
+        def print_running_average_detection_loss(self, current_loss):
+                        print(f"\n--- Iteration Number {self.get_iter_number()} losses ---")
+                        print(f"Perceptibility loss: {current_loss:>7f}")
+                        print(f"Running average perceptibility loss: {self._running_average_detection_loss:7f}")
+
+        def get_iter_number(self):
+                if self._iter_number:
+                        return self._iter_number + 1
+                else:
+                        return 0
+
+        def get_running_average_perceptibility_loss(self):
+                return self._running_average_perceptibility_loss
+
+        def get_running_average_detection_loss(self):
+                return self._running_average_detection_loss
+
+        def increase_iter_number(self):
+                self._iter_number += 1 
+
 def extract_predictions(predictions_):
         # Get the predicted class
         predictions_class = [COCO_INSTANCE_CATEGORY_NAMES[i] for i in list(predictions_["labels"])]
@@ -185,22 +237,21 @@ def get_rgb_diff(image_tensor):
         image_tensor = torch.stack([image_tensor], dim=0)
         return rgb2lab_diff(image_tensor,DEVICE) 
 
-def calculate_perceptibility_gradients_between_images(og_image, iter_num):
+def calculate_perceptibility_gradients_between_images(og_image, loss_tracker):
         patched_image_tensor = get_image_as_tensor(PATCHED_IMAGE_PATH, image_size=og_image.get_image_size())
         patched_image_rgb_diff = get_rgb_diff(patched_image_tensor)
         d_map=ciede2000_diff(og_image.get_image_rbg_diff(), patched_image_rgb_diff, DEVICE).unsqueeze(1)
         perceptibility_dis=torch.norm(d_map.view(1,-1),dim=1)
         perceptibility_loss = perceptibility_dis.sum()
-        if (iter_num % 5 == 0):
-                print(f"Perceptibility loss: {perceptibility_loss:>7f}")
+        loss_tracker.update_running_average_perceptibility_loss(perceptibility_loss)
         perceptibility_loss.backward(retain_graph=True)
         perceptibility_grad = patched_image_tensor.grad.cpu().numpy().copy()
         patched_image_tensor.grad.zero_()
         return perceptibility_grad
 
-def get_perceptibility_gradients_of_patch(og_image, patched_image, patch_shape, patch_location, iter_num):
+def get_perceptibility_gradients_of_patch(og_image, patched_image, patch_shape, patch_location, loss_tracker):
         save_image(patched_image, PATCHED_IMAGE_PATH)
-        patch_perceptibility_gradients = calculate_perceptibility_gradients_between_images(og_image, iter_num)
+        patch_perceptibility_gradients = calculate_perceptibility_gradients_between_images(og_image, loss_tracker)
         patch_perceptibility_gradients = np.reshape(patch_perceptibility_gradients, patched_image.shape)
         return patch_perceptibility_gradients[patch_location[0]:patch_location[0]+patch_shape[0],
                                               patch_location[1]:patch_location[1]+patch_shape[1],

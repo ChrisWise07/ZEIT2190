@@ -7,7 +7,7 @@ from art.attacks.evasion import RobustDPatch
 
 ROOT_DIRECTORY = "/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/"
 sys.path.append(ROOT_DIRECTORY)
-from rrap_utils import save_image, generate_predictions, plot_predictions
+from rrap_utils import save_image, generate_predictions, plot_predictions, Loss_Tracker
 from rrap_image_for_patch import Image_For_Patch
 
 DATA_DIRECTORY = ROOT_DIRECTORY + "data/"
@@ -22,18 +22,18 @@ FRCNN = PyTorchFasterRCNN(
 )
 
 def get_custom_patch_location(prediction_centre_points, patch_shape):
-    #Here the coordinates are store (y,x) as somewhere in Roboust Dpatch they are treated as (y,x) 
+    #Here the coordinates are store (y,x) as somewhere in Robust Dpatch they are treated as (y,x) 
     return ((int(prediction_centre_points[1] - (patch_shape[1]/2)),
              int(prediction_centre_points[0] - (patch_shape[0]/2))))   
 
-def generate_adversarial_patch(attack, image):
+def generate_adversarial_patch(attack, image, loss_tracker):
     print("\n\n--- Generating adversarial patch for image {} ---".format(image.get_image_num()))
     image_copies = np.vstack([image.get_image_as_np_array()]*1)
 
     #training loop: actually number of iterations = j*max_iter
     for j in range(2):
         #train adv patch to trick object detector and not to be perceptible
-        patch_adv = attack.generate(x=image_copies, og_image=image, y=None)
+        patch_adv = attack.generate(x=image_copies, og_image=image, loss_tracker=loss_tracker, y=None)
                                     
         print("\n--- Periodic prediction {}---".format(j))                         
         image_adv = attack.apply_patch(x=image.get_image_as_np_array())
@@ -45,7 +45,9 @@ def main():
 
     # Create attack
     attack = RobustDPatch(estimator=FRCNN, max_iter=5, batch_size=1, verbose=False,
-                          rotation_weights=(1,1,1,1), brightness_range= (0.1,1.0), learning_rate=0.1)
+                          rotation_weights=(1,1,1,1), brightness_range= (0.1,1.0), learning_rate=5.0)
+    
+    loss_tracker = Loss_Tracker(nth_num=2)
 
     with os.scandir(IMAGES_DIRECTORY) as entries:
         i = 0
@@ -62,7 +64,7 @@ def main():
             attack.set_patch_location(get_custom_patch_location(prediction_centre_points, patch_shape))
 
             #create adversarial patch
-            patch_adv, image_adv = generate_adversarial_patch(attack, image)
+            patch_adv, image_adv = generate_adversarial_patch(attack, image, loss_tracker)
 
             #Save adv patch
             save_image(patch_adv, (PATCHES_DIRECTORY + "patch_{}".format(i)))

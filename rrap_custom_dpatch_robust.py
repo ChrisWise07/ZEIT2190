@@ -38,8 +38,9 @@ from art import config
 from torch.functional import Tensor
 
 import sys
-sys.path.append("/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/dpatch/")
-from rrap_utils import get_perceptibility_gradients_of_patch
+ROOT_DIRECTORY = "/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/"
+sys.path.append(ROOT_DIRECTORY)
+from rrap_utils import get_perceptibility_gradients_of_patch, Loss_Tracker
 from rrap_image_for_patch import Image_For_Patch
 
 if TYPE_CHECKING:
@@ -168,6 +169,7 @@ class RobustDPatch(EvasionAttack):
         self, 
         x: np.ndarray, 
         og_image: Image_For_Patch,
+        loss_tracker: Loss_Tracker,
         y: Optional[List[Dict[str, np.ndarray]]] = None, 
         **kwargs) -> np.ndarray:
         """
@@ -245,7 +247,7 @@ class RobustDPatch(EvasionAttack):
                     gradients = self.estimator.loss_gradient(
                         x=patched_images,
                         y=patch_target,
-                        iter_num = i_step,
+                        loss_tracker = loss_tracker,
                         standardise_output=True,
                     )
 
@@ -267,7 +269,7 @@ class RobustDPatch(EvasionAttack):
             self._patch = self._patch + np.sign(patch_gradients) * (1 - 2 * int(self.targeted)) * self.learning_rate
 
             patched_image = self.apply_patch(og_image.get_image_as_np_array())
-            patch_perceptibility_gradients = get_perceptibility_gradients_of_patch(og_image, patched_image[0], self.patch_shape, self.patch_location, i_step)
+            patch_perceptibility_gradients = get_perceptibility_gradients_of_patch(og_image, patched_image[0], self.patch_shape, self.patch_location, loss_tracker)
             self._patch = self._patch + patch_perceptibility_gradients * 0.01
 
             if self.estimator.clip_values is not None:
@@ -276,6 +278,8 @@ class RobustDPatch(EvasionAttack):
                     a_min=self.estimator.clip_values[0],
                     a_max=self.estimator.clip_values[1],
                 )
+            
+            loss_tracker.increase_iter_number()
 
         return self._patch
 

@@ -6,10 +6,9 @@ import sys
 from torch.functional import Tensor
 from typing import Tuple
 
-ROOT_DIRECTORY = "/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/"
-DATA_DIRECTORY = ROOT_DIRECTORY + "data/"
-sys.path.append(ROOT_DIRECTORY)
+sys.path.append("/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/")
 from rrap_utils import get_rgb_diff, plot_predictions, get_image_as_tensor
+from rrap_constants import INITIAL_PREDICTIONS_DIRECTORY
 
 class Image_For_Patch:
     _path = str
@@ -53,7 +52,7 @@ class Image_For_Patch:
         print("\n--- Initial Predictions for image {} ---".format(self._image_num))
         predictions_boxes = plot_predictions(object_detector = object_detector,
                                              image = self._image_as_np_array, 
-                                             path = (DATA_DIRECTORY + "initial_predictions/image_{}".format(self._image_num)))
+                                             path = (INITIAL_PREDICTIONS_DIRECTORY + "image_{}".format(self._image_num)))
         return predictions_boxes
 
     def get_predictions_boxes(self):

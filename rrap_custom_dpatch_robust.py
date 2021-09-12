@@ -27,6 +27,7 @@ and changes in the brightness of the image.
 import logging
 import math
 import random
+from re import I
 from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 
@@ -35,13 +36,12 @@ from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art import config
-from torch.functional import Tensor
 
 import sys
-ROOT_DIRECTORY = "/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/"
-sys.path.append(ROOT_DIRECTORY)
-from rrap_utils import get_perceptibility_gradients_of_patch, Loss_Tracker
+sys.path.append("/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/")
+from rrap_utils import get_perceptibility_gradients_of_patch
 from rrap_image_for_patch import Image_For_Patch
+from rrap_loss_tracker import Loss_Tracker
 
 if TYPE_CHECKING:
     from art.utils import OBJECT_DETECTOR_TYPE
@@ -84,7 +84,7 @@ class RobustDPatch(EvasionAttack):
         brightness_range: Tuple[float, float] = (1.0, 1.0),
         rotation_weights: Union[Tuple[float, float, float, float], Tuple[int, int, int, int]] = (1, 0, 0, 0),
         sample_size: int = 1,
-        learning_rate: float = 5.0,
+        detection_learning_rate: float = 0.01,
         max_iter: int = 500,
         batch_size: int = 16,
         targeted: bool = False,
@@ -111,7 +111,7 @@ class RobustDPatch(EvasionAttack):
         super().__init__(estimator=estimator)
 
         self.patch_shape = patch_shape
-        self.learning_rate = learning_rate
+        self.detection_learning_rate = detection_learning_rate
         self.perceptibility_learning_rate = perceptibility_learning_rate
         self.max_iter = max_iter
         self.batch_size = batch_size
@@ -171,7 +171,7 @@ class RobustDPatch(EvasionAttack):
         self, 
         x: np.ndarray, 
         og_image: Image_For_Patch,
-        loss_tracker: Loss_Tracker,
+        print_nth_num: int,
         y: Optional[List[Dict[str, np.ndarray]]] = None, 
         **kwargs) -> np.ndarray:
         """
@@ -220,12 +220,10 @@ class RobustDPatch(EvasionAttack):
             or self.patch_location[1] + self.patch_shape[1] > image_width - self.crop_range[1]
         ):
             raise ValueError("The patch (partially) lies outside the cropped image.")
-
+        
+        loss_tracker = Loss_Tracker()
+        
         for i_step in trange(self.max_iter, desc="RobustDPatch iteration", disable=not self.verbose): 
-            if i_step == 0 or (i_step + 1) % 100 == 0:
-                logger.info("Training Step: %i", i_step + 1)
-            
-            loss_tracker.set_iter_number(i_step)
 
             num_batches = math.ceil(x.shape[0] / self.batch_size)
             patch_gradients_old = np.zeros_like(self._patch)
@@ -270,16 +268,8 @@ class RobustDPatch(EvasionAttack):
 
                     patch_gradients_old = patch_gradients
 
-            #update based on detection
-            self._patch = self._patch + np.sign(patch_gradients) * (1 - 2 * int(self.targeted)) * self.learning_rate
-            self._patch = (255*(self._patch - self._patch.min())/self._patch.ptp()).astype(int)
-
-            #update based on perceptibility
-            patched_image = self.apply_patch(og_image.get_image_as_np_array())
-            patch_perceptibility_gradients = get_perceptibility_gradients_of_patch(og_image, patched_image[0], self.patch_shape, self.patch_location, loss_tracker)
-            self._patch = self._patch + patch_perceptibility_gradients * self.perceptibility_learning_rate
-            self._patch = (255*(self._patch - self._patch.min())/self._patch.ptp()).astype(int)
-
+            #update patch based on detection
+            self._patch = self._patch + np.sign(patch_gradients) * (1 - 2 * int(self.targeted)) * self.detection_learning_rate
 
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(
@@ -287,6 +277,26 @@ class RobustDPatch(EvasionAttack):
                     a_min=self.estimator.clip_values[0],
                     a_max=self.estimator.clip_values[1],
                 )
+
+            
+            #update based on perceptibility
+            patched_image = self.apply_patch(og_image.get_image_as_np_array())
+            patch_perceptibility_gradients = get_perceptibility_gradients_of_patch(og_image, patched_image[0], self.patch_shape, self.patch_location, loss_tracker)
+            self._patch = self._patch + patch_perceptibility_gradients * self.perceptibility_learning_rate
+            
+            if self.estimator.clip_values is not None:
+                self._patch = np.clip(
+                    self._patch,
+                    a_min=self.estimator.clip_values[0],
+                    a_max=self.estimator.clip_values[1],
+                )
+            
+            if i_step == 0:
+                print(f"\n--- Iteration Number {i_step} losses ---")
+                loss_tracker.print_detection_loss()
+            elif (i_step + 1) % print_nth_num == 0:
+                print(f"\n--- Iteration Number {i_step + 1} losses ---")
+                loss_tracker.print_detection_loss()
 
         return self._patch
 
@@ -388,8 +398,8 @@ class RobustDPatch(EvasionAttack):
 
         # 3) adjust brightness:
         brightness = random.uniform(*self.brightness_range)
-        x_copy = np.round(brightness * x_copy / self.learning_rate) * self.learning_rate
-        x_patch = np.round(brightness * x_patch / self.learning_rate) * self.learning_rate
+        x_copy = np.round(brightness * x_copy / self.detection_learning_rate) * self.detection_learning_rate
+        x_patch = np.round(brightness * x_patch / self.detection_learning_rate) * self.detection_learning_rate
 
         transformations.update({"brightness": brightness})
 
@@ -457,9 +467,9 @@ class RobustDPatch(EvasionAttack):
         if len(self.patch_shape) != 3:
             raise ValueError("The length of patch shape must be 3.")
 
-        if not isinstance(self.learning_rate, float):
+        if not isinstance(self.detection_learning_rate, float):
             raise ValueError("The learning rate must be of type float.")
-        if self.learning_rate <= 0.0:
+        if self.detection_learning_rate <= 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if not isinstance(self.max_iter, int):

@@ -28,9 +28,8 @@ from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.pytorch import PyTorchEstimator
 
 import sys
-ROOT_DIRECTORY = "/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/"
-sys.path.append(ROOT_DIRECTORY)
-from rrap_utils import Loss_Tracker
+sys.path.append("/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/")
+from rrap_loss_tracker import Loss_Tracker
 
 
 if TYPE_CHECKING:
@@ -305,7 +304,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                 else:
                     loss = loss + output[loss_name]
 
-            loss_tracker.update_running_average_detection_loss(loss.item())
+            loss_tracker.update_detection_loss(loss.item())
 
             # Clean gradients
             self._model.zero_grad()

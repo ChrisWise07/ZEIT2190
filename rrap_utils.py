@@ -1,172 +1,16 @@
-from os import path
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 import torch
 import sys
-import torch.nn.functional as F
-import torch.autograd as autograd
-import torch.optim as optim
 
-from torchvision import transforms
 from PIL import Image
 
-TRANSFORM = transforms.Compose([transforms.ToTensor(),])
-DEVICE = torch.device("cpu")
-ROOT_DIRECTORY = "/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/"
-PATCHED_IMAGE_PATH = (ROOT_DIRECTORY + "data/temp/patch_image.jpg")
 
-sys.path.append(ROOT_DIRECTORY)
+sys.path.append("/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/")
 from differential_color_functions import rgb2lab_diff, ciede2000_diff
-
-
-COCO_INSTANCE_CATEGORY_NAMES = [
-    "__background__",
-    "person",
-    "bicycle",
-    "car",
-    "motorcycle",
-    "airplane",
-    "bus",
-    "train",
-    "truck",
-    "boat",
-    "traffic light",
-    "fire hydrant",
-    "N/A",
-    "stop sign",
-    "parking meter",
-    "bench",
-    "bird",
-    "cat",
-    "dog",
-    "horse",
-    "sheep",
-    "cow",
-    "elephant",
-    "bear",
-    "zebra",
-    "giraffe",
-    "N/A",
-    "backpack",
-    "umbrella",
-    "N/A",
-    "N/A",
-    "handbag",
-    "tie",
-    "suitcase",
-    "frisbee",
-    "skis",
-    "snowboard",
-    "sports ball",
-    "kite",
-    "baseball bat",
-    "baseball glove",
-    "skateboard",
-    "surfboard",
-    "tennis racket",
-    "bottle",
-    "N/A",
-    "wine glass",
-    "cup",
-    "fork",
-    "knife",
-    "spoon",
-    "bowl",
-    "banana",
-    "apple",
-    "sandwich",
-    "orange",
-    "broccoli",
-    "carrot",
-    "hot dog",
-    "pizza",
-    "donut",
-    "cake",
-    "chair",
-    "couch",
-    "potted plant",
-    "bed",
-    "N/A",
-    "dining table",
-    "N/A",
-    "N/A",
-    "toilet",
-    "N/A",
-    "tv",
-    "laptop",
-    "mouse",
-    "remote",
-    "keyboard",
-    "cell phone",
-    "microwave",
-    "oven",
-    "toaster",
-    "sink",
-    "refrigerator",
-    "N/A",
-    "book",
-    "clock",
-    "vase",
-    "scissors",
-    "teddy bear",
-    "hair drier",
-    "toothbrush",
-]
-
-class Loss_Tracker:
-        _iter_number = 0 
-        _running_average_perceptibility_loss = None
-        _running_average_detection_loss= None
-        _nth_number = int
-        _flag = False
-
-        def __init__(self, nth_num):
-                self._nth_number = nth_num
-
-        def update_running_average_perceptibility_loss(self, current_loss):
-                if (self._running_average_perceptibility_loss):
-                        self._running_average_perceptibility_loss=(self._running_average_perceptibility_loss+current_loss)/2.0
-                else:
-                        self._running_average_perceptibility_loss=current_loss
-
-                if ((self._iter_number == 0) or (self._iter_number % self._nth_number == 0)):
-                        self.print_running_average_perceptibility_loss(current_loss)
-
-        def print_running_average_perceptibility_loss(self, current_loss):
-                        print(f"\n--- Iteration Number {self._iter_number} losses ---")
-                        print(f"Perceptibility loss: {current_loss:>7f}")
-                        print(f"Running average perceptibility loss: {self._running_average_perceptibility_loss:7f}")
-
-        def update_running_average_detection_loss(self, current_loss):
-                if (self._running_average_detection_loss):
-                        self._running_average_detection_loss=(self._running_average_detection_loss+current_loss)/2.0
-                else:
-                        self._running_average_detection_loss=current_loss
-                
-                if ( ((self._iter_number == 0) or (self._iter_number % self._nth_number == 0)) and self._flag):
-                        self.print_running_average_detection_loss(current_loss)
-        
-        def print_running_average_detection_loss(self, current_loss):
-                        print(f"\n--- Iteration Number {self._iter_number} losses ---")
-                        print(f"Detection loss: {current_loss:>7f}")
-                        print(f"Running average detection loss: {self._running_average_detection_loss:7f}")
-
-        def get_iter_number(self):
-                return self._iter_number
-
-        def get_running_average_perceptibility_loss(self):
-                return self._running_average_perceptibility_loss
-
-        def get_running_average_detection_loss(self):
-                return self._running_average_detection_loss
-
-        def set_iter_number(self, num):
-                self._iter_number = num 
-        
-        def set_flag(self, flag):
-                self._flag = flag
+from rrap_constants import COCO_INSTANCE_CATEGORY_NAMES, TRANSFORM, DEVICE, PATCHED_IMAGE_PATH 
 
 def extract_predictions(predictions_):
         # Get the predicted class
@@ -244,7 +88,7 @@ def calculate_perceptibility_gradients_between_images(og_image, loss_tracker):
         d_map=ciede2000_diff(og_image.get_image_rbg_diff(), patched_image_rgb_diff, DEVICE).unsqueeze(1)
         perceptibility_dis=torch.norm(d_map.view(1,-1),dim=1)
         perceptibility_loss = perceptibility_dis.sum()
-        loss_tracker.update_running_average_perceptibility_loss(perceptibility_loss)
+        loss_tracker.update_perceptibility_loss(perceptibility_loss)
         perceptibility_loss.backward(retain_graph=True)
         perceptibility_grad = patched_image_tensor.grad.cpu().numpy().copy()
         patched_image_tensor.grad.zero_()

@@ -22,14 +22,13 @@ import logging
 from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-from torch.functional import Tensor
 
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.pytorch import PyTorchEstimator
 
 import sys
 sys.path.append("/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/")
-from rrap_loss_tracker import Loss_Tracker
+from rrap_utils import Loss_Tracker
 
 
 if TYPE_CHECKING:

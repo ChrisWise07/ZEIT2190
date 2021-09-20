@@ -48,7 +48,7 @@ def main():
 
     # Create attack
     attack = RobustDPatch(estimator=FRCNN, max_iter=2, batch_size=1, verbose=False, 
-                          rotation_weights=(1,1,0,1), brightness_range= (0.8,1.2), decay_rate = 0.95, 
+                          rotation_weights=(1,0,0,0), brightness_range= (1.0,1.0), decay_rate = 0.95, 
                           detection_learning_rate=0.1, perceptibility_learning_rate=0.1, 
                           detection_momentum = 0.9, perceptibility_momentum = 0.9)
 

@@ -186,5 +186,5 @@ def record_attack_training_data(attack, training_data_path):
         training_data["old_patch_detection_update"] = np.array(attack.get_old_patch_detection_update())
         training_data["old_patch_perceptibility_update"] = np.array(attack.get_old_patch_perceptibility_update())
         f = open(training_data_path,'w')
-        json.dump(training_data, open(training_data_path,'w'), cls=NumpyArrayEncoder)
+        json.dump(training_data, f, cls=NumpyArrayEncoder)
         f.close()

@@ -131,16 +131,19 @@ def plot_predictions(object_detector, image, path):
 
     return predictions_boxes[0]
 
-def get_image_as_tensor(image_path, image_size):
+def get_image_as_tensor(image_path, image_size, need_grad):
         image_tensor = TRANSFORM(Image.open(image_path).resize(image_size))
-        return torch.tensor(image_tensor, requires_grad=True)
+        if need_grad:
+                return torch.tensor(image_tensor, requires_grad=need_grad)
+        else:
+                return torch.tensor(image_tensor, requires_grad=need_grad)
 
 def get_rgb_diff(image_tensor):
         image_tensor = torch.stack([image_tensor], dim=0)
         return rgb2lab_diff(image_tensor,DEVICE) 
 
 def calculate_perceptibility_gradients_between_images(og_image, loss_tracker):
-        patched_image_tensor = get_image_as_tensor(PATCHED_IMAGE_PATH, image_size=og_image.get_image_size())
+        patched_image_tensor = get_image_as_tensor(PATCHED_IMAGE_PATH, image_size=og_image.get_image_size(), need_grad=True)
         patched_image_rgb_diff = get_rgb_diff(patched_image_tensor)
         d_map=ciede2000_diff(og_image.get_image_rbg_diff(), patched_image_rgb_diff, DEVICE).unsqueeze(1)
         perceptibility_dis=torch.norm(d_map.view(1,-1),dim=1)
@@ -148,7 +151,11 @@ def calculate_perceptibility_gradients_between_images(og_image, loss_tracker):
         loss_tracker.update_perceptibility_loss(perceptibility_loss)
         perceptibility_loss.backward(retain_graph=True)
         perceptibility_grad = patched_image_tensor.grad.cpu().numpy().copy()
-        patched_image_tensor.grad.zero_()
+        del(patched_image_tensor)
+        del(patched_image_rgb_diff)
+        del(d_map)
+        del(perceptibility_dis)
+        del(perceptibility_loss)
         return perceptibility_grad
 
 def get_perceptibility_gradients_of_patch(og_image, patched_image, patch_shape, patch_location, loss_tracker):
@@ -169,6 +176,7 @@ def set_attack_data(attack, training_data_path):
         attack.set_patch(np.array(training_data["patch_np_array"]))
         attack.set_old_patch_detection_update(np.array(training_data["old_patch_detection_update"]))
         attack.set_old_patch_perceptibility_update(np.array(training_data["old_patch_perceptibility_update"]))
+        del(training_data)
 
 def record_attack_training_data(attack, training_data_path):
         training_data = {}
@@ -188,3 +196,4 @@ def record_attack_training_data(attack, training_data_path):
         f = open(training_data_path,'w')
         json.dump(training_data, f, cls=NumpyArrayEncoder)
         f.close()
+        del(training_data)

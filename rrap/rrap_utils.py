@@ -133,11 +133,8 @@ def plot_predictions(object_detector, image, path):
 
 def get_image_as_tensor(image_path, image_size, need_grad):
         image_tensor = TRANSFORM(Image.open(image_path).resize(image_size))
-        if need_grad:
-                return torch.tensor(image_tensor, requires_grad=need_grad)
-        else:
-                return torch.tensor(image_tensor, requires_grad=need_grad)
-
+        return torch.tensor(image_tensor, requires_grad=need_grad)
+    
 def get_rgb_diff(image_tensor):
         image_tensor = torch.stack([image_tensor], dim=0)
         return rgb2lab_diff(image_tensor,DEVICE) 

@@ -24,45 +24,36 @@ class NumpyArrayEncoder(JSONEncoder):
         return JSONEncoder.default(self, obj)
 
 class Loss_Tracker:
-        _total_perceptibility_loss: float = 0.0
-        _num_of_perceptibility_loss_calculations: int = 0
-        _current_perceptibility_loss: float = 0.0
-        _total_detection_loss: float = 0.0
-        _num_of_detection_loss_calculations: int = 0
-        _current_detection_loss: float = 0.0
+        _perceptibility_loss: np.float32 = 0.0
+        _detection_loss: np.float32 = 0.0
 
         def update_perceptibility_loss(self, loss):
-                self._num_of_perceptibility_loss_calculations += 1
-                self._total_perceptibility_loss += loss
-                self._current_perceptibility_loss = loss
+                previous_loss = self._perceptibility_loss
+                self._perceptibility_loss = (previous_loss * 0.99) + (loss * 0.01)
+                del(previous_loss)
+                del(loss)
 
         def print_perceptibility_loss(self):
-                append_to_training_progress_file(f"Current perceptibility loss: {self._current_perceptibility_loss:>7f}")
-                append_to_training_progress_file(f"Running average perceptibility loss: {(self._total_perceptibility_loss/self._num_of_perceptibility_loss_calculations):7f} \n")
+                #append_to_training_progress_file(f"Current perceptibility loss: {self._current_perceptibility_loss:>7f}")
+                append_to_training_progress_file(f"Exponential rolling average perceptibility loss: {self._perceptibility_loss:7f} \n")
 
         def update_detection_loss(self, loss):
-                self._num_of_detection_loss_calculations += 1
-                self._total_detection_loss += loss
-                self._current_detection_loss = loss
+                previous_loss = self._detection_loss
+                self._detection_loss = (previous_loss * 0.99) + (loss * 0.01)
+                del(previous_loss)
+                del(loss)
         
         def print_detection_loss(self):
-                append_to_training_progress_file(f"Current detection loss: {self._current_detection_loss:>7f}")
-                append_to_training_progress_file(f"Running average detection loss: {self._total_detection_loss/self._num_of_detection_loss_calculations:7f}\n")
+                #append_to_training_progress_file(f"Current detection loss: {self._current_detection_loss:>7f}")
+                append_to_training_progress_file(f"Exponential rolling average detection loss: {self._detection_loss:7f}\n")
 
         def set_loss_tracker_data(self, loss_data):
-                self._total_perceptibility_loss = loss_data["total_perceptibility_loss"]
-                self._num_of_perceptibility_loss_calculations = loss_data["num_of_perceptibility_loss_calculations"]
-                self._current_perceptibility_loss = loss_data["current_perceptibility_loss"]
-                self._total_detection_loss = loss_data["total_detection_loss"]
-                self._num_of_detection_loss_calculations = loss_data["num_of_detection_loss_calculations"]
-                self._current_detection_loss = loss_data["current_detection_loss"]
+                self._perceptibility_loss = loss_data["perceptibility_loss"]
+                self._detection_loss = loss_data["detection_loss"]
 
-        def get_total_perceptibility_loss(self): return self._total_perceptibility_loss
-        def get_num_of_perceptibility_loss_calculations(self): return self._num_of_perceptibility_loss_calculations
-        def get_current_perceptibility_loss(self): return self._current_perceptibility_loss
-        def get_total_detection_loss(self): return self._total_detection_loss
-        def get_num_of_detection_loss_calculations(self): return self._num_of_detection_loss_calculations
-        def get_current_detection_loss(self): return self._current_detection_loss
+        def get_perceptibility_loss(self): return self._perceptibility_loss
+
+        def get_detection_loss(self): return self._detection_loss
 
 def append_to_training_progress_file(string):
         f = open(TRAINING_PROGRESS_FILE_PATH, "a")
@@ -134,7 +125,7 @@ def plot_predictions(object_detector, image, path):
 def get_image_as_tensor(image_path, image_size, need_grad):
         image_tensor = TRANSFORM(Image.open(image_path).resize(image_size))
         return torch.tensor(image_tensor, requires_grad=need_grad)
-    
+
 def get_rgb_diff(image_tensor):
         image_tensor = torch.stack([image_tensor], dim=0)
         return rgb2lab_diff(image_tensor,DEVICE) 
@@ -145,7 +136,7 @@ def calculate_perceptibility_gradients_between_images(og_image, loss_tracker):
         d_map=ciede2000_diff(og_image.get_image_rbg_diff(), patched_image_rgb_diff, DEVICE).unsqueeze(1)
         perceptibility_dis=torch.norm(d_map.view(1,-1),dim=1)
         perceptibility_loss = perceptibility_dis.sum()
-        loss_tracker.update_perceptibility_loss(perceptibility_loss)
+        loss_tracker.update_perceptibility_loss(perceptibility_loss.item())
         perceptibility_loss.backward(retain_graph=True)
         perceptibility_grad = patched_image_tensor.grad.cpu().numpy().copy()
         del(patched_image_tensor)
@@ -180,13 +171,8 @@ def record_attack_training_data(attack, training_data_path):
         training_data["detection_learning_rate"] = attack.get_detection_learning_rate()
         training_data["perceptibility_learning_rate"] = attack.get_perceptibility_learning_rate()
         loss_tracker = attack.get_loss_tracker()
-        loss_data = {"total_perceptibility_loss": loss_tracker.get_total_perceptibility_loss(),
-                        "num_of_perceptibility_loss_calculations": loss_tracker.get_num_of_perceptibility_loss_calculations(),
-                        "current_perceptibility_loss": loss_tracker.get_current_perceptibility_loss(), 
-                        "total_detection_loss": loss_tracker.get_total_detection_loss(),
-                        "num_of_detection_loss_calculations": loss_tracker.get_num_of_detection_loss_calculations(),
-                        "current_detection_loss": loss_tracker.get_current_detection_loss()}
-        training_data["loss_data"] = loss_data
+        training_data["loss_data"] = {"perceptibility_loss": loss_tracker.get_perceptibility_loss(), 
+                                      "detection_loss": loss_tracker.get_detection_loss()}
         training_data["patch_np_array"] = attack.get_patch()
         training_data["old_patch_detection_update"] = np.array(attack.get_old_patch_detection_update())
         training_data["old_patch_perceptibility_update"] = np.array(attack.get_old_patch_perceptibility_update())
@@ -194,3 +180,4 @@ def record_attack_training_data(attack, training_data_path):
         json.dump(training_data, f, cls=NumpyArrayEncoder)
         f.close()
         del(training_data)
+        del(loss_tracker)

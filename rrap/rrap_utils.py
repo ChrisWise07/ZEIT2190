@@ -34,7 +34,6 @@ class Loss_Tracker:
                 del(loss)
 
         def print_perceptibility_loss(self):
-                #append_to_training_progress_file(f"Current perceptibility loss: {self._current_perceptibility_loss:>7f}")
                 append_to_training_progress_file(f"Exponential rolling average perceptibility loss: {self._perceptibility_loss:7f} \n")
 
         def update_detection_loss(self, loss):
@@ -44,7 +43,6 @@ class Loss_Tracker:
                 del(loss)
         
         def print_detection_loss(self):
-                #append_to_training_progress_file(f"Current detection loss: {self._current_detection_loss:>7f}")
                 append_to_training_progress_file(f"Exponential rolling average detection loss: {self._detection_loss:7f}\n")
 
         def set_loss_tracker_data(self, loss_data):

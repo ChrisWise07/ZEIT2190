@@ -1,7 +1,6 @@
 import torch 
 
 from torchvision import transforms
-#from art.estimators.object_detection import PyTorchFasterRCNN
 
 COCO_INSTANCE_CATEGORY_NAMES = [
     "__background__",
@@ -99,14 +98,12 @@ COCO_INSTANCE_CATEGORY_NAMES = [
 
 TRANSFORM = transforms.Compose([transforms.ToTensor(),])
 
-DEVICE = torch.device("cpu")
-
-"""
-#Create ART object detector
-FRCNN = PyTorchFasterRCNN(
-    clip_values=(0, 255), attack_losses=["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"]
-)
-"""
+DEVICE: torch.device
+if not torch.cuda.is_available():
+    DEVICE = torch.device("cpu")
+else:
+    cuda_idx = torch.cuda.current_device()
+    DEVICE = torch.device("cuda:{}".format(cuda_idx))
 
 ROOT_DIRECTORY = "/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/"
 

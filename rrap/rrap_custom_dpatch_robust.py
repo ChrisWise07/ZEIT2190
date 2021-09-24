@@ -270,7 +270,7 @@ class RobustDPatch(EvasionAttack):
             current_patch_detection_update = np.sign(patch_gradients) * (1 - 2 * int(self.targeted)) * self.detection_learning_rate
             actual_patch_detection_update = (self.detection_momentum * self._old_patch_detection_update) + ((1 - self.detection_momentum) * current_patch_detection_update)
             self._patch = self._patch + actual_patch_detection_update
-            self.old_patch_detection_update = actual_patch_detection_update
+            self._old_patch_detection_update = actual_patch_detection_update
 
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
@@ -282,7 +282,7 @@ class RobustDPatch(EvasionAttack):
             current_patch_perceptibility_update = np.sign(perceptibility_gradients) * -(self.perceptibility_learning_rate)
             actual_patch_perceptibility_update = (self.perceptibility_momentum * self._old_patch_perceptibility_update) + ((1 - self.perceptibility_momentum) * current_patch_perceptibility_update)
             self._patch += actual_patch_perceptibility_update
-            self.old_patch_perceptibility_update = actual_patch_perceptibility_update
+            self._old_patch_perceptibility_update = actual_patch_perceptibility_update
 
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])

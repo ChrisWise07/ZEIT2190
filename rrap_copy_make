@@ -1,5 +1,0 @@
-cp -ru './rrap' '<backup_directory>'
-rm ./rrap/data/training_progress_file.txt
-rm -rfd ./rrap/data/attack_training_data
-mkdir ./rrap/data/attack_training_data
-python3 -W ignore ./rrap/rrap_main.py

@@ -1,0 +1,87 @@
+
+2021-09-24 16:53:59.874636
+
+------------------------------------------------------------
+
+--- Initial Predictions for image 0 ---
+predicted classes: ['airplane']
+predicted score: [0.9994717]
+
+
+--- Generating adversarial patch for image 0 ---
+
+--- Iteration Number 0 losses ---
+Exponential rolling average detection loss: 0.000353
+
+
+--- Iteration Number 2 losses ---
+Exponential rolling average detection loss: 0.000723
+
+
+--- Iteration Number 0 losses ---
+Exponential rolling average detection loss: 0.001028
+
+
+--- Iteration Number 2 losses ---
+Exponential rolling average detection loss: 0.001349
+
+
+--- Iteration Number 0 losses ---
+Exponential rolling average detection loss: 0.001646
+
+
+--- Iteration Number 2 losses ---
+Exponential rolling average detection loss: 0.001924
+
+
+
+--- Final predictions for image with adversarial patch 0 ---
+predicted classes: ['airplane']
+predicted score: [0.9989262]
+------------------------------------------------------------
+
+
+
+
+------------------------------------------------------------
+
+--- Initial Predictions for image 1 ---
+predicted classes: ['airplane', 'person', 'baseball bat', 'person', 'airplane', 'person', 'airplane', 'bird']
+predicted score: [0.9985916, 0.41528302, 0.21700983, 0.19097762, 0.17844929, 0.1469632, 0.09925674, 0.069908746]
+
+
+--- Generating adversarial patch for image 1 ---
+
+--- Iteration Number 0 losses ---
+Exponential rolling average detection loss: 0.013831
+
+
+--- Iteration Number 2 losses ---
+Exponential rolling average detection loss: 0.025568
+
+
+--- Iteration Number 0 losses ---
+Exponential rolling average detection loss: 0.037235
+
+
+--- Iteration Number 2 losses ---
+Exponential rolling average detection loss: 0.048754
+
+
+--- Iteration Number 0 losses ---
+Exponential rolling average detection loss: 0.060181
+
+
+--- Iteration Number 2 losses ---
+Exponential rolling average detection loss: 0.071472
+
+
+
+--- Final predictions for image with adversarial patch 1 ---
+predicted classes: ['airplane', 'person', 'baseball bat', 'person', 'airplane', 'airplane', 'person', 'airplane', 'bird']
+predicted score: [0.99745363, 0.41528302, 0.21700983, 0.19097762, 0.17844929, 0.16585214, 0.1469632, 0.095943324, 0.069908746]
+------------------------------------------------------------
+
+
+
+Total time taken: 0:03:35.588686

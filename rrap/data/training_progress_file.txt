@@ -1,0 +1,52 @@
+
+
+------------------------------------------------------------
+
+--- Initial Predictions for image 0 ---
+predicted classes: ['airplane']
+predicted score: [0.9994717]
+
+
+--- Generating adversarial patch for image 0 ---
+
+
+--- Step Number: 0 | Detection Lr: 0.01, Perception Lr: 5.0 ---
+
+--- Iteration Number 1 losses ---
+Current detection loss: 0.024051 
+
+Exponential rolling average detection loss: 0.000241
+
+
+
+--- Final predictions for image with adversarial patch 0 ---
+predicted classes: ['airplane', 'airplane', 'airplane']
+predicted score: [0.9986268, 0.06562747, 0.056826826]
+------------------------------------------------------------
+
+
+
+------------------------------------------------------------
+
+--- Initial Predictions for image 1 ---
+predicted classes: ['airplane', 'person', 'baseball bat', 'person', 'airplane', 'person', 'airplane', 'bird']
+predicted score: [0.9985916, 0.41528302, 0.21700983, 0.19097762, 0.17844929, 0.1469632, 0.09925674, 0.069908746]
+
+
+--- Generating adversarial patch for image 1 ---
+
+
+--- Step Number: 0 | Detection Lr: 0.01, Perception Lr: 5.0 ---
+
+--- Iteration Number 1 losses ---
+Current detection loss: 1.118063 
+
+Exponential rolling average detection loss: 0.011181
+
+
+
+--- Final predictions for image with adversarial patch 1 ---
+predicted classes: ['airplane', 'airplane', 'airplane', 'person', 'baseball bat', 'person', 'airplane', 'person', 'boat', 'tv', 'bird', 'laptop', 'boat']
+predicted score: [0.99274904, 0.52179265, 0.4274489, 0.41528302, 0.21700983, 0.19097762, 0.17844929, 0.1469632, 0.08613846, 0.07365624, 0.069908746, 0.06873155, 0.05490305]
+------------------------------------------------------------
+

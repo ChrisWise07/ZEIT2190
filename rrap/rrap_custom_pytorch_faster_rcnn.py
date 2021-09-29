@@ -27,8 +27,8 @@ from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.pytorch import PyTorchEstimator
 
 import sys
-sys.path.append("/mnt/c/Users/Chris Wise/Documents/Programming/ZEIT2190/rrap/")
-from rrap_utils import Loss_Tracker
+sys.path.append("/scratch/r40/cw9583/rrap_nci/")
+from rrap_loss_tracker import Loss_Tracker
 
 
 if TYPE_CHECKING:

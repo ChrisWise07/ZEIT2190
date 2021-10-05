@@ -1,0 +1,48 @@
+
+
+--- Initial Predictions for plane_in_sky ---
+predicted classes: ['airplane'] 
+ predicted score: [0.9994717]
+
+
+--- Generating adversarial patch for plane_in_sky ---
+
+
+--- Step Number: 0 ---
+
+--- Iteration Number 1 losses --- 
+Current perceptibility loss: 0.032064 
+Exponential rolling average perceptibility loss: 0.000321 
+
+
+
+--- Final predictions for plane_in_sky with adversarial patch ---
+predicted classes: ['airplane', 'airplane', 'airplane'] 
+ predicted score: [0.9973061, 0.087186344, 0.061532345]
+
+--- Initial Predictions for plane_in_sky ---
+predicted classes: ['airplane'] 
+ predicted score: [0.9994717]
+
+
+--- Generating adversarial patch for plane_in_sky ---
+
+--- Initial Predictions for plane_in_sky ---
+predicted classes: ['airplane'] 
+ predicted score: [0.9994717]
+
+
+--- Generating adversarial patch for plane_in_sky ---
+
+
+--- Step Number: 1 ---
+
+--- Iteration Number 1 losses --- 
+Current perceptibility loss: 0.024051 
+Exponential rolling average perceptibility loss: 0.000558 
+
+
+
+--- Final predictions for plane_in_sky with adversarial patch ---
+predicted classes: ['airplane', 'airplane', 'airplane'] 
+ predicted score: [0.99715424, 0.10926412, 0.068406016]

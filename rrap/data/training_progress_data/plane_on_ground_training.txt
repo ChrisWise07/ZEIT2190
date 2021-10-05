@@ -1,0 +1,48 @@
+
+
+--- Initial Predictions for plane_on_ground ---
+predicted classes: ['airplane', 'person', 'baseball bat', 'person', 'airplane', 'person', 'airplane', 'bird'] 
+ predicted score: [0.9985916, 0.41528302, 0.21700983, 0.19097762, 0.17844929, 0.1469632, 0.09925674, 0.069908746]
+
+
+--- Generating adversarial patch for plane_on_ground ---
+
+
+--- Step Number: 0 ---
+
+--- Iteration Number 1 losses --- 
+Current perceptibility loss: 1.075663 
+Exponential rolling average perceptibility loss: 0.010757 
+
+
+
+--- Final predictions for plane_on_ground with adversarial patch ---
+predicted classes: ['airplane', 'airplane', 'person', 'airplane', 'baseball bat', 'laptop', 'person', 'tv', 'airplane', 'person', 'boat', 'bird', 'airplane'] 
+ predicted score: [0.9908654, 0.89429647, 0.41528302, 0.39026305, 0.21700983, 0.19577207, 0.19097762, 0.18197936, 0.17844929, 0.1469632, 0.080446355, 0.069908746, 0.0542703]
+
+--- Initial Predictions for plane_on_ground ---
+predicted classes: ['airplane', 'person', 'baseball bat', 'person', 'airplane', 'person', 'airplane', 'bird'] 
+ predicted score: [0.9985916, 0.41528302, 0.21700983, 0.19097762, 0.17844929, 0.1469632, 0.09925674, 0.069908746]
+
+
+--- Generating adversarial patch for plane_on_ground ---
+
+--- Initial Predictions for plane_on_ground ---
+predicted classes: ['airplane', 'person', 'baseball bat', 'person', 'airplane', 'person', 'airplane', 'bird'] 
+ predicted score: [0.9985916, 0.41528302, 0.21700983, 0.19097762, 0.17844929, 0.1469632, 0.09925674, 0.069908746]
+
+
+--- Generating adversarial patch for plane_on_ground ---
+
+
+--- Step Number: 1 ---
+
+--- Iteration Number 1 losses --- 
+Current perceptibility loss: 1.077082 
+Exponential rolling average perceptibility loss: 0.021420 
+
+
+
+--- Final predictions for plane_on_ground with adversarial patch ---
+predicted classes: ['airplane', 'airplane', 'person', 'baseball bat', 'airplane', 'person', 'airplane', 'laptop', 'tv', 'person', 'boat', 'bird', 'airplane'] 
+ predicted score: [0.99137723, 0.89165837, 0.41528302, 0.21700983, 0.19699079, 0.19097762, 0.17844929, 0.16875376, 0.16439368, 0.1469632, 0.080281384, 0.069908746, 0.066476494]

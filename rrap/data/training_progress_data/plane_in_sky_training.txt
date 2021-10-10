@@ -2,7 +2,7 @@
 
 --- Initial Predictions for plane_in_sky ---
 predicted classes: ['airplane'] 
- predicted score: [0.9994717]
+predicted score: [0.9994717]
 
 
 --- Generating adversarial patch for plane_in_sky ---
@@ -10,15 +10,7 @@ predicted classes: ['airplane']
 
 --- Step Number: 0 ---
 
---- Iteration Number 1 losses --- 
-Current detection loss: 0.404150 
-Exponential rolling average detection loss: 0.004041 
-
-Current perceptibility loss: 10309.601562 
-Exponential rolling average perceptibility loss: 103.096016 
-
-
 
 --- Final predictions for plane_in_sky with adversarial patch ---
 predicted classes: ['airplane', 'airplane'] 
- predicted score: [0.9950073, 0.06456051]
+predicted score: [0.995034, 0.06407669]

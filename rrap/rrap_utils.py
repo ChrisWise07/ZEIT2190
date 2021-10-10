@@ -7,6 +7,7 @@ import os
 
 from json import JSONEncoder
 from torch import Tensor
+from PIL import Image
 from matplotlib.ticker import (MultipleLocator, AutoLocator, AutoMinorLocator)
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
@@ -20,6 +21,9 @@ class NumpyArrayEncoder(JSONEncoder):
         if isinstance(obj, Tensor):
                 return obj.detach().numpy().tolist()
         return JSONEncoder.default(self, obj)
+
+def save_image_from_np_array(np_array, path):
+        Image.fromarray(np.uint8(np_array)).save(path)
 
 def get_rgb_diff(image_tensor):
         return rgb2lab_diff(torch.stack([image_tensor], dim=0), DEVICE) 

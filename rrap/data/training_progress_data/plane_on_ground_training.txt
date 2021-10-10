@@ -2,7 +2,7 @@
 
 --- Initial Predictions for plane_on_ground ---
 predicted classes: ['airplane', 'person', 'airplane', 'person', 'baseball bat', 'person', 'airplane', 'bird'] 
- predicted score: [0.99824464, 0.43781734, 0.23529504, 0.13066657, 0.1219733, 0.10703874, 0.10520898, 0.06046211]
+predicted score: [0.99824464, 0.43781734, 0.23529504, 0.13066657, 0.1219733, 0.10703874, 0.10520898, 0.06046211]
 
 
 --- Generating adversarial patch for plane_on_ground ---
@@ -10,15 +10,7 @@ predicted classes: ['airplane', 'person', 'airplane', 'person', 'baseball bat', 
 
 --- Step Number: 0 ---
 
---- Iteration Number 1 losses --- 
-Current detection loss: 0.518811 
-Exponential rolling average detection loss: 0.005188 
-
-Current perceptibility loss: 9922.399414 
-Exponential rolling average perceptibility loss: 99.223994 
-
-
 
 --- Final predictions for plane_on_ground with adversarial patch ---
 predicted classes: ['airplane', 'airplane', 'person', 'airplane', 'airplane', 'laptop', 'tv', 'baseball bat', 'airplane', 'person', 'boat', 'person', 'bird'] 
- predicted score: [0.98948634, 0.3946196, 0.3731294, 0.32346177, 0.16691418, 0.1599472, 0.14457978, 0.09416406, 0.08965113, 0.084557384, 0.082989804, 0.07454337, 0.060219284]
+predicted score: [0.98947865, 0.39505586, 0.3731294, 0.32349858, 0.16691418, 0.16065355, 0.14614704, 0.09416406, 0.08971505, 0.084557384, 0.08292002, 0.07454337, 0.060219284]

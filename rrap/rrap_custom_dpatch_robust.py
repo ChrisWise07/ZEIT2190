@@ -120,7 +120,7 @@ class RobustDPatch(EvasionAttack):
         super().__init__(estimator=estimator)
 
         self.image_to_patch = image_to_patch
-        self.patch_shape = self.image_to_patch.patch_size
+        self.patch_shape = self.image_to_patch.patch_shape
         self.patch_location = self.image_to_patch.patch_location
         self.crop_range = crop_range
         self.brightness_range = brightness_range
@@ -295,7 +295,6 @@ class RobustDPatch(EvasionAttack):
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
 
-  
             if (i_step + 1) % 1 == 0:
                 #update based on perceptibility
                 perceptibility_gradients = calculate_perceptibility_gradients_of_patch(self.image_to_patch.patch_section_rgb_diff, self._patch, self.loss_tracker)

@@ -6,39 +6,40 @@ import os
 from dataclasses import InitVar, dataclass, field
 from torch.functional import Tensor
 from typing import List, Tuple
+from PIL import Image
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
-from rrap_utils import get_rgb_diff, save_image, get_image_as_tensor, file_handler
-from rrap_constants import INITIAL_PREDICTIONS_DIRECTORY, IMAGES_DIRECTORY, TRAINING_PROGRESS_DIRECTORY, COCO_INSTANCE_CATEGORY_NAMES
+from rrap_utils import get_rgb_diff, file_handler
+from rrap_constants import DATA_DIRECTORY, INITIAL_PREDICTIONS_DIRECTORY, IMAGES_DIRECTORY, TRAINING_PROGRESS_DIRECTORY, COCO_INSTANCE_CATEGORY_NAMES, TRANSFORM
 
 @dataclass(repr=False, eq=False)
 class Image_For_Patch:
     name: str
     file_type: InitVar[str] 
     object_detector: InitVar[None]
-    image_as_np_array: np.ndarray = field(init=False, hash=False)
-    image_size: Tuple[int,int] = field(init=False, hash=False)
-    image_rbg_diff: Tensor = field(init=False, hash=False)
-    image_tensor: Tensor = field(init=False, hash=False)
-    patch_size: Tuple[int, int, int] = field(init=False, hash=False)
-    patch_location: Tuple[int, int] = field(init=False, hash=False)
-    predictions_boxes: List[int] = field(default_factory=list, init=False, hash=False)
+    image_as_np_array: np.ndarray = field(init=False)
+    cropped_image_as_np_array: np.ndarray = field(init=False)
+    patch_section_rbg_diff: Tensor = field(init=False)
+    patch_size: Tuple[int, int, int] = field(init=False)
+    patch_location: Tuple[int, int] = field(init=False)
+    prediction_box: List[int] = field(init=False)
 
     def __post_init__(self, file_type, object_detector):
         self.image_as_np_array = self._open_image_as_np_array(file_type)
-        self.image_size = (self.image_as_np_array.shape[2:0:-1])
-        #self._image_tensor = get_image_as_tensor(path, self._image_size, need_grad=False)
-        #self._image_rbg_diff = get_rgb_diff(self._image_tensor)
-        self.predictions_boxes = self.generate_predictions_for_image(object_detector, self.image_as_np_array, 
-                                                                      path = f"{INITIAL_PREDICTIONS_DIRECTORY}{self.name}")
-        
+        self.predictions_box = self.generate_predictions_for_image(object_detector, self.image_as_np_array, path = f"{INITIAL_PREDICTIONS_DIRECTORY}{self.name}.{file_type}")
+        crop_box = [self.predictions_box[0][0], self.predictions_box[0][1], self.predictions_box[1][0], self.predictions_box[1][1]]
+        self.cropped_image_as_np_array = self._open_image_as_np_array(file_type, crop_box)
+
         #Customise patch location to centre of prediction box and patch to ratio of prediction box
         self.patch_size, self.patch_location = self.cal_custom_patch_shape_and_location()
+        patch_rectangle_box = [self.patch_location[1], self.patch_location[0], self.patch_location[1] + self.patch_size[1], self.patch_location[0]+ self.patch_size[0]]
+        patch_section_tensor = TRANSFORM(Image.fromarray(np.uint8(self.cropped_image_as_np_array[0])).crop(patch_rectangle_box)).detach()
+        self.patch_section_rgb_diff = get_rgb_diff(patch_section_tensor)
+  
         
     
-    def _open_image_as_np_array(self, file_type):
-        image = cv2.imread(f"{IMAGES_DIRECTORY}{self.name}.{file_type}")
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    def _open_image_as_np_array(self, file_type, crop_box = None):
+        image = np.asarray(Image.open(f"{IMAGES_DIRECTORY}{self.name}.{file_type}").crop(crop_box))
         image = np.stack([image], axis=0).astype(np.float32)
         return image
     
@@ -101,33 +102,21 @@ class Image_For_Patch:
                 cv2.putText(img, pred_cls[i], (int(boxes[i][0][0]), int(boxes[i][0][1])), 
                         cv2.FONT_HERSHEY_SIMPLEX, text_size, (0, 255, 0), thickness=text_th)
 
-        save_image(img, path)   
+        Image.fromarray(np.uint8(img)).save(path)
 
     def cal_custom_patch_shape_and_location(self):
-        prediction_box_centre_points = self.calculate_centre_point_of_prediction_boxes()
-        prediction_box_size = self.calculate_size_of_prediction_boxes()
+        height, width = self.cropped_image_as_np_array.shape[1], self.cropped_image_as_np_array.shape[2]
+        prediction_box_centre_points = (int(width/2), int(height/2)) 
 
-        #in the format (height, width, nb_channels) to Dpatch Requirements
-        patch_shape = (int(1/5 * prediction_box_size[1]), int(1/5 * prediction_box_size[0]), 3)
+        #in the format (height, width, nb_channels) to meet Dpatch Requirements
+        patch_shape = (int(1/5 * height), int(1/5 * width), 3)
         patch_location = self.cal_custom_patch_location(prediction_box_centre_points, patch_shape)
 
         return patch_shape, patch_location
 
-    def calculate_centre_point_of_prediction_boxes(self):
-        top_left_bbox = self.predictions_boxes[0]
-        bottom_right_bbox = self.predictions_boxes[1]
-        return (int((top_left_bbox[0] + bottom_right_bbox[0]) / 2),
-                int((top_left_bbox[1] +  bottom_right_bbox[1]) / 2)) 
-    
-    def calculate_size_of_prediction_boxes(self):
-        top_left_bbox = self.predictions_boxes[0]
-        bottom_right_bbox = self.predictions_boxes[1]
-        return (bottom_right_bbox[0] - top_left_bbox[0], bottom_right_bbox[1] - top_left_bbox[1])
-
-    def cal_custom_patch_location(self, prediction_centre_points, patch_shape):
-        #Here the coordinates are store (y,x) as somewhere in Robust Dpatch they are treated as (y,x) 
+    def cal_custom_patch_location(self, prediction_centre_points, patch_shape): 
         return ((int(prediction_centre_points[1] - (patch_shape[0]/2)),
-                int(prediction_centre_points[0] - (patch_shape[1]/2))))  
+                int(prediction_centre_points[0] - (patch_shape[1]/2)))) 
 
     def append_to_training_progress_file(self, string):
         path = f"{TRAINING_PROGRESS_DIRECTORY}{self.name}_training.txt"

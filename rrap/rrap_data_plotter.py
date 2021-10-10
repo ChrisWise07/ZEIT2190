@@ -22,12 +22,12 @@ class Data_Plotter:
         self.current_perceptibility_loss_history.append(loss_tracker.current_perceptibility_loss)
         self.perceptibility_lr_history.append(perceptibility_lr)
 
-        self.rolling_detection_loss_history.append(loss_tracker.rolling_perceptibility_loss)
-        self.current_detection_loss_history.append(loss_tracker.current_perceptibility_loss)
+        self.rolling_detection_loss_history.append(loss_tracker.rolling_detection_loss)
+        self.current_detection_loss_history.append(loss_tracker.current_detection_loss)
         self.detection_lr_history.append(detection_lr)
 
     def plot_training_data(self, image_name):
         plot_data(self.rolling_detection_loss_history, self.current_detection_loss_history, 
                   self.detection_lr_history, image_name, 'Detection')
-        #plot_data(self._rolling_perceptibility_loss_history, self._current_perceptibility_loss_history, 
-                  #self._perceptibility_lr_history, self._image_num, 'Perceptibility')
+        plot_data(self.rolling_perceptibility_loss_history, self.current_perceptibility_loss_history, 
+                  self.perceptibility_lr_history, image_name, 'Perceptibility')

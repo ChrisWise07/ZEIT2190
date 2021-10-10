@@ -1,7 +1,9 @@
 import os
 import sys
+import torch
 
 from torchvision import transforms
+from rrap_custom_pytorch_faster_rcnn import PyTorchFasterRCNN
 
 ROOT_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(ROOT_DIRECTORY)
@@ -101,6 +103,16 @@ COCO_INSTANCE_CATEGORY_NAMES = [
 ]
 
 TRANSFORM = transforms.Compose([transforms.ToTensor(),])
+
+FRCNN = PyTorchFasterRCNN(
+        clip_values=(0, 255), attack_losses=["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"]
+    )
+
+if not torch.cuda.is_available():
+        DEVICE = torch.device("cpu")
+else:
+        cuda_idx = torch.cuda.current_device()
+        DEVICE = torch.device(f"cuda:{cuda_idx}")
 
 DATA_DIRECTORY = ROOT_DIRECTORY + "/data/"
 

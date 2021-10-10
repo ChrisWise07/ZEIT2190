@@ -40,7 +40,7 @@ from art import config
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
-from rrap_utils import get_perceptibility_gradients_of_patch
+from rrap_utils import calculate_perceptibility_gradients_of_patch
 from rrap_image_for_patch import Image_For_Patch
 from rrap_loss_tracker import Loss_Tracker
 
@@ -151,6 +151,7 @@ class RobustDPatch(EvasionAttack):
             if self.estimator.clip_values is None:
                 self._patch = np.zeros(shape=self.patch_shape, dtype=config.ART_NUMPY_DTYPE)
             else:
+                np.random.seed(0)
                 self._patch = (
                     np.random.randint(0, 255, size=self.patch_shape)
                     / 255
@@ -294,22 +295,19 @@ class RobustDPatch(EvasionAttack):
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
 
-            """
-            if (i_step + 1) % 2 == 0:
+  
+            if (i_step + 1) % 1 == 0:
                 #update based on perceptibility
-                patched_image = self.apply_patch(self.image_to_patch.get_image_as_np_array())
-                perceptibility_gradients = get_perceptibility_gradients_of_patch(self.image_to_patch, patched_image[0], self.patch_shape, self.patch_location, self.loss_tracker)
-                current_patch_perceptibility_update = np.sign(perceptibility_gradients) * (self.perceptibility_learning_rate)
+                perceptibility_gradients = calculate_perceptibility_gradients_of_patch(self.image_to_patch.patch_section_rgb_diff, self._patch, self.loss_tracker)
+                current_patch_perceptibility_update = perceptibility_gradients * -(self.perceptibility_learning_rate)
                 self._old_patch_perceptibility_update = (self.perceptibility_momentum * self._old_patch_perceptibility_update) + ((1 - self.perceptibility_momentum) * current_patch_perceptibility_update)
-                self._patch = self._patch -  self._old_patch_perceptibility_update
+                self._patch = self._patch +  self._old_patch_perceptibility_update
                 
                 if self.estimator.clip_values is not None:
                     self._patch = np.clip(self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
-            """
 
             if (i_step + 1) % print_nth_num == 0:
-                self.loss_tracker.print_detection_loss(self.image_to_patch, num_iter = i_step + 1)
-                #self.loss_tracker.print_perceptibility_loss()
+                self.loss_tracker.print_losses(self.image_to_patch, num_iter = i_step + 1)
 
         return self._patch
 

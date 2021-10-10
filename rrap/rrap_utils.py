@@ -7,7 +7,6 @@ import os
 
 from json import JSONEncoder
 from torch import Tensor
-from PIL import Image
 from matplotlib.ticker import (MultipleLocator, AutoLocator, AutoMinorLocator)
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
@@ -22,50 +21,23 @@ class NumpyArrayEncoder(JSONEncoder):
                 return obj.detach().numpy().tolist()
         return JSONEncoder.default(self, obj)
 
-def save_image(img, path):
-        plt.axis("off")
-        plt.imshow(img.astype(np.uint64), interpolation="nearest")
-        plt.savefig(path, bbox_inches="tight", pad_inches = 0)
-        plt.close()
-
-def get_device():
-        if not torch.cuda.is_available():
-                return torch.device("cpu")
-        else:
-                cuda_idx = torch.cuda.current_device()
-                return torch.device(f"cuda:{cuda_idx}")
-
-def get_image_as_tensor(image_path, image_size, need_grad):
-        image_tensor = TRANSFORM(Image.open(image_path).resize(image_size))
-        return image_tensor.clone().detach().requires_grad_(need_grad)
-        
 def get_rgb_diff(image_tensor):
-        image_tensor = torch.stack([image_tensor], dim=0)
-        return rgb2lab_diff(image_tensor,get_device()) 
+        return rgb2lab_diff(torch.stack([image_tensor], dim=0), DEVICE) 
 
-def calculate_perceptibility_gradients_between_images(og_image, loss_tracker):
-        patched_image_tensor = get_image_as_tensor(PATCHED_IMAGE_PATH, image_size=og_image.get_image_size(), need_grad=True)
-        patched_image_rgb_diff = get_rgb_diff(patched_image_tensor)
-        d_map=ciede2000_diff(og_image.get_image_rbg_diff(), patched_image_rgb_diff, get_device()).unsqueeze(1)
+def calculate_perceptibility_gradients_of_patch(og_image_patch_section_rgb_diff, patch, loss_tracker):
+        patch_tensor = TRANSFORM(patch).requires_grad_(True)
+        patch_rgb_diff = get_rgb_diff(patch_tensor)
+        d_map=ciede2000_diff(og_image_patch_section_rgb_diff, patch_rgb_diff, DEVICE).unsqueeze(1)
         perceptibility_dis=torch.norm(d_map.view(1,-1),dim=1)
         perceptibility_loss = perceptibility_dis.sum()
         loss_tracker.update_perceptibility_loss(perceptibility_loss.item())
         perceptibility_loss.backward(retain_graph=True)
-        perceptibility_grad = patched_image_tensor.grad.cpu().numpy().copy()
-        return perceptibility_grad
+        return np.reshape(patch_tensor.grad.cpu().numpy(), patch.shape)
 
-def get_perceptibility_gradients_of_patch(og_image, patched_image, patch_shape, patch_location, loss_tracker):
-        save_image(patched_image, PATCHED_IMAGE_PATH)
-        patch_perceptibility_gradients = calculate_perceptibility_gradients_between_images(og_image, loss_tracker)
-        patch_perceptibility_gradients = np.reshape(patch_perceptibility_gradients, patched_image.shape)
-        return patch_perceptibility_gradients[patch_location[0]:patch_location[0]+patch_shape[0],
-                                              patch_location[1]:patch_location[1]+patch_shape[1],
-                                              :]
 def file_handler(path, mode, func):
         try:
-                f = open(path, mode)
-                value = func(f)
-                f.close()
+                with open(path, mode) as f:
+                        value = func(f)
                 return value
         except FileNotFoundError:
                 return 0
@@ -122,5 +94,5 @@ def plot_data(rolling_loss_history, current_loss_history, lr_history, image_name
 
         # save the plot as a file
         plt.title(f"{loss_type} Data Over Step Numbers", fontsize=12)
-        plt.savefig(f"{PLOTS_DIRECTORY}{loss_type}_loss_data_{image_name}.png", bbox_inches='tight')
+        plt.savefig(f"{PLOTS_DIRECTORY}{loss_type}_loss_data_{image_name}", bbox_inches='tight')
         plt.close()

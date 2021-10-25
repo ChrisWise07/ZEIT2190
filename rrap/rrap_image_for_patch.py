@@ -10,7 +10,7 @@ from PIL import Image
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 from rrap_utils import get_rgb_diff, file_handler, save_image_from_np_array
-from rrap_constants import DATA_DIRECTORY, INITIAL_PREDICTIONS_DIRECTORY, IMAGES_DIRECTORY, TRAINING_PROGRESS_DIRECTORY, COCO_INSTANCE_CATEGORY_NAMES, TRANSFORM
+from rrap_constants import INITIAL_PREDICTIONS_DIRECTORY, IMAGES_DIRECTORY, TRAINING_PROGRESS_DIRECTORY, COCO_INSTANCE_CATEGORY_NAMES, TRANSFORM
 
 @dataclass(repr=False, eq=False)
 class Image_For_Patch:
@@ -21,6 +21,7 @@ class Image_For_Patch:
     patch_section_rbg_diff: Tensor = field(init=False)
     patch_size: Tuple[int, int, int] = field(init=False)
     patch_location: Tuple[int, int] = field(init=False)
+    patch_section_of_image: np.ndarray = field(init=False)
 
     def __post_init__(self, file_type, object_detector):
         self.image_as_np_array = self._open_image_as_np_array(file_type)
@@ -29,10 +30,10 @@ class Image_For_Patch:
         #Customise patch location to centre of prediction box and patch to ratio of prediction box
         self.patch_shape, self.patch_location = self.cal_custom_patch_shape_and_location(prediction_box)
 
-        patch_section_of_image = self.image_as_np_array[0][self.patch_location[0]:self.patch_location[0] + self.patch_shape[0], 
+        self.patch_section_of_image = self.image_as_np_array[0][self.patch_location[0]:self.patch_location[0] + self.patch_shape[0], 
                                                            self.patch_location[1]:self.patch_location[1] + self.patch_shape[1], 
                                                            :]
-        patch_section_tensor = TRANSFORM(patch_section_of_image).detach()
+        patch_section_tensor = TRANSFORM(self.patch_section_of_image).clamp(0,1)
         self.patch_section_rgb_diff = get_rgb_diff(patch_section_tensor)
   
         
@@ -110,7 +111,7 @@ class Image_For_Patch:
                                         int(prediction_box[1][1] - (prediction_box_width_height[1]/2))) 
 
         #in the format (height, width, nb_channels) to meet Dpatch Requirements
-        patch_shape = (int(1/5 * prediction_box_width_height[1]), int(1/5 * prediction_box_width_height[0]), 3)
+        patch_shape = (int(1/4 * prediction_box_width_height[1]), int(1/4 * prediction_box_width_height[0]), 3)
         patch_location = self.cal_custom_patch_location(prediction_box_centre_points, patch_shape)
 
         return patch_shape, patch_location

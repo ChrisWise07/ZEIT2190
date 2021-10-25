@@ -29,15 +29,15 @@ def get_rgb_diff(image_tensor):
         return rgb2lab_diff(torch.stack([image_tensor], dim=0), DEVICE) 
 
 def calculate_perceptibility_gradients_of_patch(og_image_patch_section_rgb_diff, patch, loss_tracker):
-        patch_tensor = TRANSFORM(patch).requires_grad_(True)
+        patch_tensor = TRANSFORM(patch).clamp(0,1).requires_grad_(True)
         patch_rgb_diff = get_rgb_diff(patch_tensor)
         d_map=ciede2000_diff(og_image_patch_section_rgb_diff, patch_rgb_diff, DEVICE).unsqueeze(1)
         perceptibility_dis=torch.norm(d_map.view(1,-1),dim=1)
         perceptibility_loss = perceptibility_dis.sum()
         loss_tracker.update_perceptibility_loss(perceptibility_loss.item())
-        perceptibility_loss.backward(retain_graph=True)
-        return np.reshape(patch_tensor.grad.cpu().numpy(), patch.shape)
-
+        perceptibility_loss.backward()
+        return patch_tensor.grad.permute(1,2,0).numpy()
+        
 def file_handler(path, mode, func):
         try:
                 with open(path, mode) as f:
@@ -76,25 +76,26 @@ def plot_data(rolling_loss_history, current_loss_history, lr_history, image_name
         ax.xaxis.set_minor_locator(MultipleLocator(10))
 
         # make a plot
-        ax.plot(rolling_loss_history, '-r', label=f'Currrent {loss_type} Loss')
-        ax.plot(current_loss_history, '-g', label=f'Rolling {loss_type} Loss')
-        ax.legend(loc='upper left')
+        ax.plot(rolling_loss_history, '-r', label=f'Rolling {loss_type} Loss')
+        ax.plot(current_loss_history, '-g', label=f'Current {loss_type} Loss')
+
         # set y-axis label
         ax.set_ylabel(f"{loss_type} Loss", fontsize=10)
         ax.yaxis.set_major_locator(AutoLocator())
-        #ax.yaxis.set_major_formatter(f'{x:.0f}"')
         ax.yaxis.set_minor_locator(AutoMinorLocator())
 
         # twin object for two different y-axis on the sample plot
         ax2=ax.twinx()
-        # make a plot with different y-axis using second axis object
+        # make a plot with different y-ax,is using second axis object
         ax2.plot(lr_history, '-b', label=f'{loss_type} Lr')
-        ax2.legend(loc='upper right')
+
         # set y-axis label
         ax2.set_ylabel(f"{loss_type} Lr", fontsize=10)
         ax.yaxis.set_major_locator(AutoLocator())
-        #ax.yaxis.set_major_formatter('{x:.0f}')
         ax.yaxis.set_minor_locator(AutoMinorLocator())
+
+        ax.legend(loc='upper left', prop={'size': 10})
+        ax2.legend(loc='upper right', prop={'size': 10})
 
         # save the plot as a file
         plt.title(f"{loss_type} Data Over Step Numbers", fontsize=12)

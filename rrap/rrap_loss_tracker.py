@@ -22,13 +22,3 @@ class Loss_Tracker:
                                                        f"Exponential rolling average detection loss: {self.rolling_detection_loss:7f} \n\n"
                                                        f"Current perceptibility loss: {self.current_perceptibility_loss:7f} \n" +
                                                        f"Exponential rolling average perceptibility loss: {self.rolling_perceptibility_loss:7f} \n")
-
-        def print_perceptibility_loss(self, image, num_iter):
-                image.append_to_training_progress_file(f"\n--- Iteration Number {num_iter} losses --- \n" +
-                                                       f"Current perceptibility loss: {self.current_perceptibility_loss:7f} \n" +
-                                                       f"Exponential rolling average perceptibility loss: {self.rolling_perceptibility_loss:7f} \n")
-        
-        def print_detection_loss(self, image, num_iter):
-                image.append_to_training_progress_file(f"\n--- Iteration Number {num_iter} losses --- \n" +
-                                                       f"Current Detection loss: {self.current_detection_loss:7f} \n" +
-                                                       f"Exponential rolling average Detection loss: {self.rolling_detection_loss:7f} \n")

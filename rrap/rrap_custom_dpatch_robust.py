@@ -30,6 +30,7 @@ import random
 from re import I
 from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
+from math import pi, cos
 
 from tqdm.auto import trange
 from art.attacks.attack import EvasionAttack
@@ -140,7 +141,7 @@ class RobustDPatch(EvasionAttack):
             self.perceptibility_learning_rate = training_data["perceptibility_learning_rate"]
             self.loss_tracker = Loss_Tracker(rolling_perceptibility_loss = training_data["loss_data"]["perceptibility_loss"], 
                                              rolling_detection_loss = training_data["loss_data"]["detection_loss"])
-            self._patch = np.array(training_data["patch_np_array"])
+            self._patch = np.array(training_data["patch_np_array"]).astype(config.ART_NUMPY_DTYPE)
             self._old_patch_detection_update = np.array(training_data["old_patch_detection_update"])
             self._old_patch_perceptibility_update = np.array(training_data["old_patch_perceptibility_update"])
         else:
@@ -148,6 +149,11 @@ class RobustDPatch(EvasionAttack):
             self.perceptibility_learning_rate = perceptibility_learning_rate
             self.loss_tracker = Loss_Tracker()
 
+            self._patch = image_to_patch.patch_section_of_image
+
+            #self._patch = np.full(shape=self.patch_shape, fill_value = 255, dtype=config.ART_NUMPY_DTYPE)
+
+            """
             if self.estimator.clip_values is None:
                 self._patch = np.zeros(shape=self.patch_shape, dtype=config.ART_NUMPY_DTYPE)
             else:
@@ -158,10 +164,10 @@ class RobustDPatch(EvasionAttack):
                     * (self.estimator.clip_values[1] - self.estimator.clip_values[0])
                     + self.estimator.clip_values[0]
                 ).astype(config.ART_NUMPY_DTYPE)
-
+            """    
             self._old_patch_detection_update = np.zeros_like(self._patch)
             self._old_patch_perceptibility_update = np.zeros_like(self._patch)
-
+            
         self._check_params()
 
     def apply_patch(self, x: np.ndarray, patch_external: Optional[np.ndarray] = None) -> np.ndarray:
@@ -253,11 +259,9 @@ class RobustDPatch(EvasionAttack):
         
         num_batches = math.ceil(x.shape[0] / self.batch_size)
     
-        for i_step in trange(self.max_iter, desc="RobustDPatch iteration", disable=not self.verbose): 
-
-            patch_gradients_old = np.zeros_like(self._patch)
-
-            for e_step in range(self.sample_size):
+        for i_step in trange(self.max_iter, desc="RobustDPatch iteration", disable=not self.verbose):
+            if (i_step % 4 == 0):
+                patch_gradients_old = np.zeros_like(self._patch)
 
                 for i_batch in range(num_batches):
                     i_batch_start = i_batch * self.batch_size
@@ -287,23 +291,24 @@ class RobustDPatch(EvasionAttack):
 
                     patch_gradients_old += np.sum(gradients, axis=0)
 
-            #update patch based on detection
-            current_patch_detection_update = np.sign(patch_gradients_old) * (1 - 2 * int(self.targeted)) * self.detection_learning_rate
-            self._old_patch_detection_update = (self.detection_momentum * self._old_patch_detection_update) + ((1 - self.detection_momentum) * current_patch_detection_update)
-            self._patch = self._patch + self._old_patch_detection_update
+                #update patch based on detection
+                current_patch_detection_update = np.sign(patch_gradients_old) * (1 - 2 * int(self.targeted)) * self.detection_learning_rate
+
+                #self._patch += current_patch_detection_update 
+
+                self._old_patch_detection_update = (self.detection_momentum * self._old_patch_detection_update) + ((1 - self.detection_momentum) * current_patch_detection_update)
+                self._patch += self._old_patch_detection_update
             
+            #update based on perceptibility
+            current_patch_perceptibility_update = calculate_perceptibility_gradients_of_patch(self.image_to_patch.patch_section_rgb_diff, self._patch, self.loss_tracker) * -(self.perceptibility_learning_rate)
+    
+            #self._patch += current_patch_perceptibility_update
+
+            self._old_patch_perceptibility_update = (self.perceptibility_momentum * self._old_patch_perceptibility_update) + ((1 - self.perceptibility_momentum) * current_patch_perceptibility_update)
+            self._patch += self._old_patch_perceptibility_update 
+
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
-
-            if (i_step + 1) % 1 == 0:
-                #update based on perceptibility
-                perceptibility_gradients = calculate_perceptibility_gradients_of_patch(self.image_to_patch.patch_section_rgb_diff, self._patch, self.loss_tracker)
-                current_patch_perceptibility_update = perceptibility_gradients * -(self.perceptibility_learning_rate)
-                self._old_patch_perceptibility_update = (self.perceptibility_momentum * self._old_patch_perceptibility_update) + ((1 - self.perceptibility_momentum) * current_patch_perceptibility_update)
-                self._patch = self._patch +  self._old_patch_perceptibility_update
-                
-                if self.estimator.clip_values is not None:
-                    self._patch = np.clip(self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
 
             if (i_step + 1) % print_nth_num == 0:
                 self.loss_tracker.print_losses(self.image_to_patch, num_iter = i_step + 1)
